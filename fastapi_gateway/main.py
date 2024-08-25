@@ -1,61 +1,62 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from jwt import PyJWKClient
-import jwt
-from typing import Annotated
+import secrets
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import RedirectResponse, JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
+from keycloak import KeycloakOpenID
 
 app = FastAPI()
 
-# Mount the static directory for serving HTML files at /static
-app.mount("/static", StaticFiles(directory="static"), name="static")
+secret_key = secrets.token_urlsafe(32)
+app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
+KEYCLOAK_SERVER_URL = "https://auth.civmillabs.com/"
+KEYCLOAK_REALM = "civmillabs"
+KEYCLOAK_CLIENT_ID = "api"
+KEYCLOAK_CLIENT_SECRET = (
+    "0Wrdh3lkRWzMJ56AW7532Td8uCDTt5rx"  # Use only if your client is confidential
+)
+REDIRECT_URI = "https://civmillabs.com/callback"
 
-# Serve index.html directly at the root
-@app.get("/")
-async def read_root():
-    return RedirectResponse(url="/static/index.html")
-
-
-# OAuth2 settings
-oauth_2_scheme = OAuth2AuthorizationCodeBearer(
-    tokenUrl="http://auth.civmillabs.com/realms/civmillabs/protocol/openid-connect/token",
-    authorizationUrl="http://auth.civmillabs.com/realms/civmillabs/protocol/openid-connect/auth",
-    refreshUrl="http://auth.civmillabs.com/protocol/openid-connect/token",
+keycloak_openid = KeycloakOpenID(
+    server_url=KEYCLOAK_SERVER_URL,
+    client_id=KEYCLOAK_CLIENT_ID,
+    realm_name=KEYCLOAK_REALM,
+    client_secret_key=KEYCLOAK_CLIENT_SECRET,
+    verify=True,
 )
 
 
-async def valid_access_token(access_token: Annotated[str, Depends(oauth_2_scheme)]):
-    url = "http://auth.civmillabs.com/realms/civmillabs/protocol/openid-connect/certs"
-    jwks_client = PyJWKClient(url)
+@app.get("/login")
+async def login():
+    auth_url = keycloak_openid.auth_url(redirect_uri=REDIRECT_URI, scope="openid")
+    return RedirectResponse(url=auth_url)
 
-    try:
-        signing_key = jwks_client.get_signing_key_from_jwt(access_token)
-        data = jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=["RS256"],
-            audience="api",
-            options={"verify_exp": True},
-        )
-        return data
-    except jwt.exceptions.InvalidTokenError:
+
+@app.get("/callback")
+async def callback(request: Request):
+    code = request.query_params.get("code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code not found")
+
+    token = keycloak_openid.token(
+        grant_type="authorization_code", code=code, redirect_uri=REDIRECT_URI
+    )
+
+    request.session["access_token"] = token["access_token"]
+
+    return JSONResponse({"message": "Login successful", "token": token["access_token"]})
+
+
+@app.get("/protected")
+async def protected(request: Request):
+    access_token = request.session.get("access_token")
+    if not access_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-
-@app.get("/public")
-def get_public():
-    return {"message": "This endpoint is public"}
+    return {"message": "Access granted", "token": access_token}
 
 
-@app.get("/private", dependencies=[Depends(valid_access_token)])
-def get_private():
-    return {"message": "This endpoint is private"}
+if __name__ == "__main__":
+    import uvicorn
 
-
-@app.get("/login")
-def login():
-    return RedirectResponse(
-        url="http://auth.civmillabs.com/realms/civmillabs/protocol/openid-connect/auth?client_id=api&response_type=code&redirect_uri=https://civmillabs.com"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000)
