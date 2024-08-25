@@ -12,10 +12,8 @@ app.add_middleware(SessionMiddleware, secret_key=secret_key)
 KEYCLOAK_SERVER_URL = "https://auth.civmillabs.com/"
 KEYCLOAK_REALM = "civmillabs"
 KEYCLOAK_CLIENT_ID = "api"
-KEYCLOAK_CLIENT_SECRET = (
-    "0Wrdh3lkRWzMJ56AW7532Td8uCDTt5rx"  # Use only if your client is confidential
-)
-REDIRECT_URI = "https://civmillabs.com/callback"
+KEYCLOAK_CLIENT_SECRET = "0Wrdh3lkRWzMJ56AW7532Td8uCDTt5rx"
+REDIRECT_URI = "https://api.civmillabs.com/callback"
 
 keycloak_openid = KeycloakOpenID(
     server_url=KEYCLOAK_SERVER_URL,
@@ -44,7 +42,7 @@ async def callback(request: Request):
 
     request.session["access_token"] = token["access_token"]
 
-    return JSONResponse({"message": "Login successful", "token": token["access_token"]})
+    return RedirectResponse(url="https://civmillabs.com")
 
 
 @app.get("/protected")
