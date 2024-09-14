@@ -1,0 +1,11 @@
+{
+  "typeCheckingMode": "strict",
+  "reportMissingTypeStubs": true,
+  "reportMissingImports": true,
+  "reportUnnecessaryTypeIgnoreComment": "error",
+  "reportUnknownParameterType": "error",
+  "reportUnknownArgumentType": "error",
+  "reportUnknownLambdaType": "error",
+  "reportUnknownVariableType": "error",
+  "reportUnknownMemberType": "error"
+}
