@@ -10,6 +10,12 @@ class PaginatedCSV(BaseModel):
     rows_per_page: int
 
 
+class CSVUploadResponse(BaseModel):
+    file_id: str
+    headers: list[str]
+    map_layer: bool
+
+
 class MapPoint(BaseModel):
     latitude: float = Field(
         ..., ge=-90, le=90, description="Latitude must be between -90 and 90"

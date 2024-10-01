@@ -1,11 +1,4 @@
-name,age,city
-Alice,30,New York
-Bob,25,Los Angeles
-Charlie,35,Chicago
-David,28,Houston
-Eva,22,Phoenix
-Frank,33,San Francisco
-Grace,29,Seattle
-Henry,31,Boston
-Ivy,26,Denver
-Jack,34,Miami
+name,age,latitude,longitude
+Alice,30,40.7128,-74.0060
+Bob,25,34.0522,-118.2437
+Charlie,35,41.8781,-87.6298
