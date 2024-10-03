@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict
 import csv
 import uuid
@@ -9,6 +10,14 @@ app: FastAPI = FastAPI()
 
 csv_storage: Dict[str, str] = {}
 map_layers_storage: Dict[str, MapLayer] = {}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://civmillabs.com"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/upload-csv/", response_model=CSVUploadResponse)

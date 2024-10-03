@@ -1,7 +1,8 @@
 #!/bin/bash
 
-upload_response=$(curl -s -X POST "http://127.0.0.1:8000/upload-csv/" -F "file=@data.csv")
+#upload_response=$(curl -s -X POST "http://127.0.0.1:8000/upload-csv/" -F "file=@data.csv")
 
+upload_response=$(curl -s -X POST "https://api.civmillabs.com/upload-csv/" -F "file=@data.csv")
 file_id=$(echo $upload_response | jq -r '.file_id')
 headers=$(echo $upload_response | jq -r '.headers')
 map_layer=$(echo $upload_response | jq -r '.map_layer')
